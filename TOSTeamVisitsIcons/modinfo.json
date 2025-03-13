@@ -1,0 +1,8 @@
+{
+  "HarmonyId": "pokegustavo.FactionVisits",
+  "DisplayName": "Faction Visits",
+  "Authors": [ "Pokegustavo" ],
+  "Description": "Shows who your faction allies are visiting during the night",
+  "Version": "1.0.0",
+  "RequiredMods": []
+}
