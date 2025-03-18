@@ -7,6 +7,7 @@ using Server.Shared.Info;
 using Server.Shared.Messages;
 using Server.Shared.State;
 using Server.Shared.State.Chat;
+using Services;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,7 +21,7 @@ namespace TOSTeamVisitsIcons
         [HarmonyPostfix]
         static void HandleMessages(ChatLogMessage chatLogMessage, bool isValidMessage)
         {
-            if (isValidMessage)
+            if (isValidMessage && Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT)
             {
                 try
                 {
@@ -66,28 +67,29 @@ namespace TOSTeamVisitsIcons
                                             break;
                                     }
                                 }
-                                else if (data.bIsChangingTarget)
+                                else
                                 {
                                     switch (data.menuChoiceType)
                                     {
                                         case MenuChoiceType.NightAbility:
-                                            Manager.Instance.ChangeTarget(Manager.AbilityType.nightAbility,data.teammateTargetingPosition1,roleData.roleIcon,data.teammateRole);
+                                            Manager.Instance.ChangeTarget(Manager.AbilityType.nightAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole, data.teammatePosition);
                                             break;
                                         case MenuChoiceType.NightAbility2:
-                                            Manager.Instance.ChangeTarget(Manager.AbilityType.nightAbility2, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole);
+                                            Manager.Instance.ChangeTarget(Manager.AbilityType.nightAbility2, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole, data.teammatePosition);
                                             break;
                                         case MenuChoiceType.SpecialAbility:
                                             if (data.teammateTargetingPosition1 != -1)
                                             {
-                                                Manager.Instance.ChangeTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole);
+                                                Manager.Instance.ChangeTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole, data.teammatePosition);
                                             }
                                             if (data.teammateTargetingPosition2 != -1)
                                             {
-                                                Manager.Instance.ChangeTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole);
+                                                Manager.Instance.ChangeTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole, data.teammatePosition);
                                             }
                                             break;
                                     }
                                 }
+                                /*
                                 else
                                 {
                                     switch (data.menuChoiceType)
@@ -110,6 +112,7 @@ namespace TOSTeamVisitsIcons
                                             break;
                                     }
                                 }
+                                */
                             }
                         }
                     }
@@ -185,9 +188,11 @@ namespace TOSTeamVisitsIcons
                 return _panel;
             }
         }
-        internal void AddTarget(AbilityType abilityId, int targetPlayer, Sprite sprite, Role role)
+        internal void AddTarget(AbilityType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
             TosAbilityPanelListItem tagetPlayerPanel = Panel.playerListPlayers[targetPlayer];
+            TosAbilityPanelListItem actorPlayerPanel = Panel.playerListPlayers[actorPlayer];
+            if (actorPlayerPanel != null && actorPlayerPanel.halo.activeSelf) return;
             string targetName = role.ToString();
             if (abilityId == AbilityType.nightAbility2)
             {
@@ -203,6 +208,7 @@ namespace TOSTeamVisitsIcons
             }
             Image image = UnityEngine.Object.Instantiate(Panel.playerListPlayers[targetPlayer].effectImage2);
             image.gameObject.name = targetName;
+            image.name = targetName;
             if (Panel.playerListPlayers[targetPlayer].roleIconButton.isActiveAndEnabled)
             {
                 image.transform.SetParent(tagetPlayerPanel.roleIconButton.transform);
@@ -211,6 +217,7 @@ namespace TOSTeamVisitsIcons
             {
                 image.transform.SetParent(tagetPlayerPanel.playerNameButton.transform);
             }
+            Console.WriteLine("TOSTVI adding icon " + image.name);
             image.transform.localScale = Vector3.one;
             image.sprite = sprite;
             visits[targetPlayer].Add(image);
@@ -237,6 +244,7 @@ namespace TOSTeamVisitsIcons
                     if (imgs[i].gameObject.name == roleName)
                     {
                         Image temp = imgs[i];
+                        Console.WriteLine("TOSTVI removing " + temp.gameObject.name + " because of target change or cancel");
                         imgs.RemoveAt(i);
                         UnityEngine.Object.DestroyImmediate(temp);
                         removed = true;
@@ -249,9 +257,10 @@ namespace TOSTeamVisitsIcons
                 if (removed) break;
             }
         }
-        internal void ChangeTarget(AbilityType abilityId, int targetPlayer, Sprite sprite, Role role)
+        internal void ChangeTarget(AbilityType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
-            switch(role) 
+            Console.WriteLine("TOSTVI requesting cancels for the change of target");
+            switch (role)
             {
                 case Role.POTIONMASTER:
                 case Role.RITUALIST:
@@ -267,7 +276,7 @@ namespace TOSTeamVisitsIcons
                         CancelTarget(AbilityType.nightAbility2, role);
                         CancelTarget(AbilityType.specialAbility, role);
                     }
-                    else 
+                    else
                     {
                         CancelTarget(AbilityType.nightAbility, role);
                         CancelTarget(abilityId, role);
@@ -287,7 +296,8 @@ namespace TOSTeamVisitsIcons
                     CancelTarget(abilityId, role);
                     break;
             }
-            AddTarget(abilityId,targetPlayer,sprite,role);
+            Console.WriteLine("TOSTVI adding icon to new target");
+            AddTarget(abilityId, targetPlayer, sprite, role, actorPlayer);
         }
         internal void Clear()
         {
@@ -297,7 +307,25 @@ namespace TOSTeamVisitsIcons
                 {
                     Image temp = imgs[i];
                     imgs.RemoveAt(i);
-                    if (temp != null) UnityEngine.Object.DestroyImmediate(temp.gameObject);
+                    Console.Write($"TOSTIV icon is null: {temp == null}, ");
+                    Console.Write($"icon name: {temp.name}, ");
+                    try
+                    {
+                        Console.WriteLine($"$\"icon GameObject is null: {temp.gameObject == null} and GameObject name: {temp.gameObject.name}");
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"$\"icon GameObject is null: true, exception happen!");
+                        continue;
+                    }
+                    if (temp != null && temp.gameObject != null)
+                    {
+                        string name = temp.gameObject.name;
+                        Console.WriteLine("TOSTIV deleting icon " + temp.gameObject.name);
+                        temp.gameObject.SetActive(true);
+                        UnityEngine.Object.DestroyImmediate(temp.gameObject);
+                        Console.WriteLine("TOSTIV deleting icon " + name + " success!");
+                    }
                 }
             }
         }
