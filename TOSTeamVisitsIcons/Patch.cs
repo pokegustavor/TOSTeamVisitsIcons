@@ -8,20 +8,19 @@ using Server.Shared.Messages;
 using Server.Shared.State;
 using Server.Shared.State.Chat;
 using Services;
+using Shared.Chat;
+using SML;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace TOSTeamVisitsIcons
 {
-    [HarmonyPatch(typeof(HudFactionTargetSelectionChatLogShared))]
     internal class Interpreter
     {
         static RoleCardPanel panel = null;
-        [HarmonyPatch("HandleMessage")]
-        [HarmonyPostfix]
-        static void HandleMessages(ChatLogMessage chatLogMessage, bool isValidMessage)
+        internal static void HandleMessages(ChatLogMessage chatLogMessage)
         {
-            if (isValidMessage && Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT)
+            if (Service.Game.Sim.info.gameInfo.Data.playPhase == PlayPhase.NIGHT && Service.Game.Sim.info.gameInfo.Data.gamePhase == GamePhase.PLAY && chatLogMessage.chatLogEntry is ChatLogFactionTargetSelectionFeedbackEntry)
             {
                 try
                 {
@@ -54,65 +53,57 @@ namespace TOSTeamVisitsIcons
                             {
                                 if (data.bIsCancel)
                                 {
-                                    switch (data.menuChoiceType)
-                                    {
-                                        case MenuChoiceType.NightAbility:
-                                            Manager.Instance.CancelTarget(Manager.AbilityType.nightAbility, data.teammateRole);
-                                            break;
-                                        case MenuChoiceType.NightAbility2:
-                                            Manager.Instance.CancelTarget(Manager.AbilityType.nightAbility2, data.teammateRole);
-                                            break;
-                                        case MenuChoiceType.SpecialAbility:
-                                            Manager.Instance.CancelTarget(Manager.AbilityType.specialAbility, data.teammateRole);
-                                            break;
-                                    }
+                                    Manager.Instance.CancelTarget(data.menuChoiceType, data.teammateRole);
                                 }
                                 else
                                 {
+                                    Sprite sprite = roleData.roleIcon;
+                                    if (ModSettings.GetBool("Use ability icons"))
+                                    {
+                                        if (data.menuChoiceType == MenuChoiceType.NightAbility)
+                                        {
+                                            if (data.bHasNecronomicon)
+                                            {
+                                                sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
+                                            }
+                                            else
+                                            {
+                                                sprite = roleData.abilityIcon;
+                                            }
+                                        }
+                                        else if (data.menuChoiceType == MenuChoiceType.NightAbility2) 
+                                        {
+                                            sprite = roleData.abilityIcon2;
+                                        }
+                                    }
+                                    if ((data.teammateRole == Role.WITCH || data.teammateRole == Role.NECROMANCER || data.teammateRole == Role.RETRIBUTIONIST || data.teammateRole == Role.POISONER) && data.menuChoiceType == MenuChoiceType.NightAbility2)
+                                    {
+                                        sprite = roleData.abilityIcon2;
+                                    }
+                                    if (data.menuChoiceType == MenuChoiceType.SpecialAbility)
+                                    {
+                                        sprite = roleData.specialAbilityIcon;
+                                    }
                                     switch (data.menuChoiceType)
                                     {
                                         case MenuChoiceType.NightAbility:
-                                            Manager.Instance.ChangeTarget(Manager.AbilityType.nightAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole, data.teammatePosition);
+                                            Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility, data.teammateTargetingPosition1, sprite, data.teammateRole, data.teammatePosition);
                                             break;
                                         case MenuChoiceType.NightAbility2:
-                                            Manager.Instance.ChangeTarget(Manager.AbilityType.nightAbility2, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole, data.teammatePosition);
+                                            Manager.Instance.ChangeTarget(MenuChoiceType.NightAbility2, data.teammateTargetingPosition2, sprite, data.teammateRole, data.teammatePosition);
                                             break;
                                         case MenuChoiceType.SpecialAbility:
                                             if (data.teammateTargetingPosition1 != -1)
                                             {
-                                                Manager.Instance.ChangeTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole, data.teammatePosition);
+                                                Manager.Instance.ChangeTarget(MenuChoiceType.SpecialAbility, data.teammateTargetingPosition1, sprite, data.teammateRole, data.teammatePosition);
                                             }
                                             if (data.teammateTargetingPosition2 != -1)
                                             {
-                                                Manager.Instance.ChangeTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole, data.teammatePosition);
+                                                Manager.Instance.ChangeTarget(MenuChoiceType.SpecialAbility, data.teammateTargetingPosition2, sprite, data.teammateRole, data.teammatePosition);
                                             }
                                             break;
                                     }
                                 }
-                                /*
-                                else
-                                {
-                                    switch (data.menuChoiceType)
-                                    {
-                                        case MenuChoiceType.NightAbility:
-                                            Manager.Instance.AddTarget(Manager.AbilityType.nightAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole);
-                                            break;
-                                        case MenuChoiceType.NightAbility2:
-                                            Manager.Instance.AddTarget(Manager.AbilityType.nightAbility2, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole);
-                                            break;
-                                        case MenuChoiceType.SpecialAbility:
-                                            if (data.teammateTargetingPosition1 != -1)
-                                            {
-                                                Manager.Instance.AddTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition1, roleData.roleIcon, data.teammateRole);
-                                            }
-                                            if (data.teammateTargetingPosition2 != -1)
-                                            {
-                                                Manager.Instance.AddTarget(Manager.AbilityType.specialAbility, data.teammateTargetingPosition2, roleData.roleIcon, data.teammateRole);
-                                            }
-                                            break;
-                                    }
-                                }
-                                */
                             }
                         }
                     }
@@ -131,13 +122,26 @@ namespace TOSTeamVisitsIcons
     [HarmonyPatch(typeof(GameObservations))]
     internal class Cleaner
     {
+        static bool hooked = false;
         [HarmonyPatch("HandleGameInfo")]
         [HarmonyPostfix]
         static void ClearIcons(GameInfoObservation gameInfoObservation)
         {
-            if (gameInfoObservation.Data.playPhase != PlayPhase.NIGHT)
+            if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && !hooked)
             {
-                Console.Write($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
+                hooked = true;
+                Console.WriteLine("TOSTVI adding hook");
+                Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged += Interpreter.HandleMessages;
+            }
+            else if (gameInfoObservation.Data.gamePhase != GamePhase.PLAY && hooked) 
+            {
+                hooked = false;
+                Console.WriteLine("TOSTVI removing hook");
+                Service.Game.Sim.simulation.incomingChatLogMessage.OnChanged -= Interpreter.HandleMessages;
+            }
+            if (gameInfoObservation.Data.gamePhase == GamePhase.PLAY && gameInfoObservation.Data.playPhase != PlayPhase.NIGHT)
+            {
+                Console.WriteLine($"TOSTVI Requesting icons clear because of playphase: " + gameInfoObservation.Data.playPhase);
                 Manager.Instance.Clear();
             }
         }
@@ -145,12 +149,6 @@ namespace TOSTeamVisitsIcons
 
     internal class Manager
     {
-        internal enum AbilityType
-        {
-            nightAbility,
-            nightAbility2,
-            specialAbility
-        }
         Dictionary<int, List<Image>> visits = new Dictionary<int, List<Image>>();
         TosAbilityPanel _panel = null;
         static Manager _instance = null;
@@ -188,17 +186,17 @@ namespace TOSTeamVisitsIcons
                 return _panel;
             }
         }
-        internal void AddTarget(AbilityType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
+        internal void AddTarget(MenuChoiceType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
             TosAbilityPanelListItem tagetPlayerPanel = Panel.playerListPlayers[targetPlayer];
             TosAbilityPanelListItem actorPlayerPanel = Panel.playerListPlayers[actorPlayer];
             if (actorPlayerPanel != null && actorPlayerPanel.halo.activeSelf) return;
             string targetName = role.ToString();
-            if (abilityId == AbilityType.nightAbility2)
+            if (abilityId == MenuChoiceType.NightAbility2)
             {
                 targetName += "2";
             }
-            else if (abilityId == AbilityType.specialAbility)
+            else if (abilityId == MenuChoiceType.SpecialAbility)
             {
                 targetName += "S";
             }
@@ -224,15 +222,15 @@ namespace TOSTeamVisitsIcons
             image.transform.localPosition = new Vector3(80 + 32 * (visits[targetPlayer].Count - 1), 0, 0);
             image.gameObject.SetActive(true);
         }
-        internal void CancelTarget(AbilityType abilityId, Role role)
+        internal void CancelTarget(MenuChoiceType abilityId, Role role)
         {
             bool removed = false;
             string roleName = role.ToString();
-            if (abilityId == AbilityType.nightAbility2)
+            if (abilityId == MenuChoiceType.NightAbility2)
             {
                 roleName += "2";
             }
-            else if (abilityId == AbilityType.specialAbility)
+            else if (abilityId == MenuChoiceType.SpecialAbility)
             {
                 roleName += "S";
             }
@@ -257,40 +255,39 @@ namespace TOSTeamVisitsIcons
                 if (removed) break;
             }
         }
-        internal void ChangeTarget(AbilityType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
+        internal void ChangeTarget(MenuChoiceType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
             Console.WriteLine("TOSTVI requesting cancels for the change of target");
             switch (role)
             {
                 case Role.POTIONMASTER:
                 case Role.RITUALIST:
-                    CancelTarget(AbilityType.nightAbility, role);
-                    CancelTarget(AbilityType.nightAbility2, role);
-                    CancelTarget(AbilityType.specialAbility, role);
+                    CancelTarget(MenuChoiceType.NightAbility, role);
+                    CancelTarget(MenuChoiceType.NightAbility2, role);
+                    CancelTarget(MenuChoiceType.SpecialAbility, role);
                     break;
                 case Role.NECROMANCER:
-                case Role.RETRIBUTIONIST:
-                    if (abilityId == AbilityType.nightAbility)
+                    if (abilityId == MenuChoiceType.NightAbility)
                     {
-                        CancelTarget(AbilityType.nightAbility, role);
-                        CancelTarget(AbilityType.nightAbility2, role);
-                        CancelTarget(AbilityType.specialAbility, role);
+                        CancelTarget(MenuChoiceType.NightAbility, role);
+                        CancelTarget(MenuChoiceType.NightAbility2, role);
+                        CancelTarget(MenuChoiceType.SpecialAbility, role);
                     }
                     else
                     {
-                        CancelTarget(AbilityType.nightAbility, role);
+                        CancelTarget(MenuChoiceType.NightAbility, role);
                         CancelTarget(abilityId, role);
                     }
                     break;
                 case Role.ILLUSIONIST:
                 case Role.POISONER:
                 case Role.MEDUSA:
-                    CancelTarget(AbilityType.nightAbility, role);
-                    CancelTarget(AbilityType.nightAbility2, role);
+                    CancelTarget(MenuChoiceType.NightAbility, role);
+                    CancelTarget(MenuChoiceType.NightAbility2, role);
                     break;
                 case Role.COVENLEADER:
-                    CancelTarget(AbilityType.specialAbility, role);
-                    CancelTarget(AbilityType.nightAbility, role);
+                    CancelTarget(MenuChoiceType.SpecialAbility, role);
+                    CancelTarget(MenuChoiceType.NightAbility, role);
                     break;
                 default:
                     CancelTarget(abilityId, role);
@@ -307,24 +304,12 @@ namespace TOSTeamVisitsIcons
                 {
                     Image temp = imgs[i];
                     imgs.RemoveAt(i);
-                    Console.Write($"TOSTIV icon is null: {temp == null}, ");
-                    Console.Write($"icon name: {temp.name}, ");
-                    try
-                    {
-                        Console.WriteLine($"$\"icon GameObject is null: {temp.gameObject == null} and GameObject name: {temp.gameObject.name}");
-                    }
-                    catch
-                    {
-                        Console.WriteLine($"$\"icon GameObject is null: true, exception happen!");
-                        continue;
-                    }
                     if (temp != null && temp.gameObject != null)
                     {
-                        string name = temp.gameObject.name;
                         Console.WriteLine("TOSTIV deleting icon " + temp.gameObject.name);
                         temp.gameObject.SetActive(true);
                         UnityEngine.Object.DestroyImmediate(temp.gameObject);
-                        Console.WriteLine("TOSTIV deleting icon " + name + " success!");
+                        
                     }
                 }
             }
