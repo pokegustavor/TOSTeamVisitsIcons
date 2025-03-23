@@ -60,7 +60,7 @@ namespace TOSTeamVisitsIcons
                                     Sprite sprite = roleData.roleIcon;
                                     if (ModSettings.GetBool("Use ability icons"))
                                     {
-                                        if (data.menuChoiceType == MenuChoiceType.NightAbility)
+                                        if (data.menuChoiceType == MenuChoiceType.NightAbility || (data.teammateRole == Role.ILLUSIONIST && data.menuChoiceType == MenuChoiceType.NightAbility2))
                                         {
                                             if (data.bHasNecronomicon)
                                             {
@@ -190,7 +190,6 @@ namespace TOSTeamVisitsIcons
         {
             TosAbilityPanelListItem tagetPlayerPanel = Panel.playerListPlayers[targetPlayer];
             TosAbilityPanelListItem actorPlayerPanel = Panel.playerListPlayers[actorPlayer];
-            //if (actorPlayerPanel != null && actorPlayerPanel.halo.activeSelf) return;
             string targetName = role.ToString();
             if (abilityId == MenuChoiceType.NightAbility2)
             {
@@ -200,12 +199,6 @@ namespace TOSTeamVisitsIcons
             {
                 targetName += "S";
             }
-            /*
-            foreach (Image img in visits[targetPlayer])
-            {
-                if (img.gameObject.name == targetName) return;
-            }
-            */
             Image image = UnityEngine.Object.Instantiate(Panel.playerListPlayers[targetPlayer].effectImage2);
             image.gameObject.name = targetName;
             image.name = targetName;
