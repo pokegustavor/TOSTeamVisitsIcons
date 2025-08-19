@@ -4,16 +4,5 @@
   "Authors": [ "Pokegustavo" ],
   "Description": "Shows who your faction allies are visiting during the night",
   "Version": "1.0.0",
-  "RequiredMods": [],
-  "Settings": {
-    "CheckboxSettings": [
-      {
-        "Name": "Use ability icons",
-        "Description": "Shows the role ability icon instead of role icon in all cases (attacking coven shows as book icon)",
-        "DefaultValue": false,
-        "Available": true,
-        "AvailableInGame": true
-      }
-    ]
-  }
+  "RequiredMods": []
 }

@@ -58,7 +58,7 @@ namespace TOSTeamVisitsIcons
                                 else
                                 {
                                     Sprite sprite = roleData.roleIcon;
-                                    if (ModSettings.GetBool("Use ability icons"))
+                                    if (ModSettings.GetString("Display Mode") == "Ability Icon")
                                     {
                                         if (data.menuChoiceType == MenuChoiceType.NightAbility || (data.teammateRole == Role.ILLUSIONIST && data.menuChoiceType == MenuChoiceType.NightAbility2))
                                         {
@@ -71,10 +71,14 @@ namespace TOSTeamVisitsIcons
                                                 sprite = roleData.abilityIcon;
                                             }
                                         }
-                                        else if (data.menuChoiceType == MenuChoiceType.NightAbility2) 
+                                        else if (data.menuChoiceType == MenuChoiceType.NightAbility2)
                                         {
                                             sprite = roleData.abilityIcon2;
                                         }
+                                    }
+                                    else if (data.bHasNecronomicon && ModSettings.GetString("Display Mode") == "Role + Book Icon") 
+                                    {
+                                        sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
                                     }
                                     if ((data.teammateRole == Role.WITCH || data.teammateRole == Role.NECROMANCER || data.teammateRole == Role.RETRIBUTIONIST || data.teammateRole == Role.POISONER) && data.menuChoiceType == MenuChoiceType.NightAbility2)
                                     {
