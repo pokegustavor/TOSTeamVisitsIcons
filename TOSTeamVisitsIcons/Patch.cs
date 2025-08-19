@@ -84,10 +84,6 @@ namespace TOSTeamVisitsIcons
                                     {
                                         sprite = Service.Game.PlayerEffects.GetEffect(EffectType.NECRONOMICON).sprite;
                                     }
-                                    if (data.teammateRole == Role.NECROMANCER) 
-                                    {
-                                        Console.WriteLine($"TOSTVIRI values: {ModSettings.GetBool("Role Revival Icon")}, {data.menuChoiceType}");
-                                    }
                                     if (ModSettings.GetBool("Role Revival Icon") && (data.teammateRole == Role.NECROMANCER || data.teammateRole == Role.RETRIBUTIONIST) && data.menuChoiceType == MenuChoiceType.NightAbility2) 
                                     {
                                         //Find who is been revived
