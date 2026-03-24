@@ -310,6 +310,7 @@ namespace TOSTeamVisitsIcons
             {
                 case Role.POTIONMASTER:
                 case Role.RITUALIST:
+                case Role.VOODOOMASTER:
                     CancelTarget(MenuChoiceType.NightAbility, role, actorPlayer);
                     CancelTarget(MenuChoiceType.NightAbility2, role, actorPlayer);
                     CancelTarget(MenuChoiceType.SpecialAbility, role, actorPlayer);
@@ -330,6 +331,7 @@ namespace TOSTeamVisitsIcons
                 case Role.ILLUSIONIST:
                 case Role.POISONER:
                 case Role.MEDUSA:
+                case Role.VAMPIRE:
                     CancelTarget(MenuChoiceType.NightAbility, role, actorPlayer);
                     CancelTarget(MenuChoiceType.NightAbility2, role, actorPlayer);
                     break;
