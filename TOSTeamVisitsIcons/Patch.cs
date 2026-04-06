@@ -61,7 +61,9 @@ namespace TOSTeamVisitsIcons
                                 else
                                 {
                                     Console.WriteLine("TOSTVI grabbing sprite");
+                                    //By default use role icon
                                     Sprite sprite = roleData.roleIcon;
+                                    //Apply ability icon in case option is enabled
                                     if (ModSettings.GetString("Display Mode") == "Ability Icon")
                                     {
                                         if (data.menuChoiceType == MenuChoiceType.NightAbility || (data.teammateRole == Role.ILLUSIONIST && data.menuChoiceType == MenuChoiceType.NightAbility2))
@@ -127,11 +129,13 @@ namespace TOSTeamVisitsIcons
                                             sprite = roleData.abilityIcon2;
                                         }
                                     }
+                                    //Add 2nd ability icon no matter the option selected to avoid duplicated icons
                                     else if ((data.teammateRole == Role.WITCH || data.teammateRole == Role.NECROMANCER || data.teammateRole == Role.RETRIBUTIONIST || data.teammateRole == Role.POISONER) && data.menuChoiceType == MenuChoiceType.NightAbility2)
                                     {
                                         Console.WriteLine("TOSTVI ability 2 case scenario");
                                         sprite = roleData.abilityIcon2;
                                     }
+                                    //Always apply ability icon when it comes to special abilities
                                     if (data.menuChoiceType == MenuChoiceType.SpecialAbility)
                                     {
                                         Console.WriteLine("TOSTVI special ability case scenario");
@@ -242,6 +246,7 @@ namespace TOSTeamVisitsIcons
         }
         internal void AddTarget(MenuChoiceType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
+            //Adds the sprite to a list with a special name to mark it aparta by player, role and ability
             TosAbilityPanelListItem tagetPlayerPanel = Panel.playerListPlayers[targetPlayer];
             string targetName = $"{role}({actorPlayer})";
             if (abilityId == MenuChoiceType.NightAbility2)
@@ -272,6 +277,7 @@ namespace TOSTeamVisitsIcons
         }
         internal void CancelTarget(MenuChoiceType abilityId, Role role, int actorPlayer)
         {
+            //Removes the requested sprite from the list of sprites
             bool removed = false;
             string roleName = $"{role}({actorPlayer})";
             if (abilityId == MenuChoiceType.NightAbility2)
@@ -305,6 +311,7 @@ namespace TOSTeamVisitsIcons
         }
         internal void ChangeTarget(MenuChoiceType abilityId, int targetPlayer, Sprite sprite, Role role, int actorPlayer)
         {
+            //First removes all relevant sprites, then adds any relevant sprites to the list
             Console.WriteLine("TOSTVI requesting cancels for the change of target");
             switch (role)
             {
@@ -348,6 +355,7 @@ namespace TOSTeamVisitsIcons
         }
         internal void Clear()
         {
+            //End of night full sprite clear
             foreach (List<Image> imgs in visits.Values)
             {
                 for (int i = imgs.Count - 1; i >= 0; i--)
