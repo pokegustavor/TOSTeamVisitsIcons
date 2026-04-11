@@ -4,6 +4,8 @@ using Services;
 using SML;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
 
 namespace TOSTeamVisitsIcons
 {
@@ -20,7 +22,15 @@ namespace TOSTeamVisitsIcons
             }
             catch (Exception ex)
             {
-                Console.WriteLine("The rainbow faction crashed the mod. Contact pokegustavo. Error: " + ex.Message);
+                Console.WriteLine("TOSTVI The rainbow faction crashed the mod. Contact pokegustavo. Error: " + ex.Message);
+            }
+            try 
+            {
+                Settings.fancyUI = Assembly.LoadFrom(Path.Combine(AppContext.BaseDirectory, "SalemModLoader\\Mods\\FancyUI.dll")); 
+            }
+            catch 
+            {
+                Console.WriteLine("TOSTVI Fancy UI was not found.");
             }
         }
     }
@@ -28,6 +38,7 @@ namespace TOSTeamVisitsIcons
     [DynamicSettings]
     public class Settings
     {
+        public static Assembly fancyUI = null;
         public static Dictionary<string, object> SettingsCache = new Dictionary<string, object>
         {
             {

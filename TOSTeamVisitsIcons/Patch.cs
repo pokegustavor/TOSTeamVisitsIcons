@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
+using System.Reflection;
+using System.Security.Policy;
 using Game.Interface;
 using Game.Simulation;
 using HarmonyLib;
@@ -62,7 +65,7 @@ namespace TOSTeamVisitsIcons
                                 {
                                     Console.WriteLine("TOSTVI grabbing sprite");
                                     //By default use role icon
-                                    Sprite sprite = roleData.roleIcon;
+                                    Sprite sprite = Manager.GetSprite(roleData, panel, 0);
                                     //Apply ability icon in case option is enabled
                                     if (ModSettings.GetString("Display Mode") == "Ability Icon")
                                     {
@@ -74,12 +77,12 @@ namespace TOSTeamVisitsIcons
                                             }
                                             else
                                             {
-                                                sprite = roleData.abilityIcon;
+                                                sprite = Manager.GetSprite(roleData, panel, 1);
                                             }
                                         }
                                         else if (data.menuChoiceType == MenuChoiceType.NightAbility2)
                                         {
-                                            sprite = roleData.abilityIcon2;
+                                            sprite = Manager.GetSprite(roleData, panel, 2);
                                         }
                                     }
                                     else if (data.bHasNecronomicon && ModSettings.GetString("Display Mode") == "Role + Book Icon") 
@@ -115,7 +118,7 @@ namespace TOSTeamVisitsIcons
                                                 UIRoleData.UIRoleDataInstance revivalRoleData = panel.roleData.roleDataList.Find((UIRoleData.UIRoleDataInstance d) => d.role == revivalRole);
                                                 if (revivalRoleData != null && revivalRoleData.roleIcon != null)
                                                 {
-                                                    sprite = revivalRoleData.roleIcon;
+                                                    sprite = Manager.GetSprite(revivalRoleData, panel, 0);
                                                     found = true;
                                                 }
                                                 else { Console.WriteLine("TOSTVIRI revival role icon not found"); }
@@ -126,20 +129,20 @@ namespace TOSTeamVisitsIcons
                                         //If unable to get icon of the role been revived, put ability 2 icon
                                         if (!found) 
                                         {
-                                            sprite = roleData.abilityIcon2;
+                                            sprite = Manager.GetSprite(roleData, panel, 2);
                                         }
                                     }
                                     //Add 2nd ability icon no matter the option selected to avoid duplicated icons
                                     else if ((data.teammateRole == Role.WITCH || data.teammateRole == Role.NECROMANCER || data.teammateRole == Role.RETRIBUTIONIST || data.teammateRole == Role.POISONER) && data.menuChoiceType == MenuChoiceType.NightAbility2)
                                     {
                                         Console.WriteLine("TOSTVI ability 2 case scenario");
-                                        sprite = roleData.abilityIcon2;
+                                        sprite = Manager.GetSprite(roleData, panel, 2);
                                     }
                                     //Always apply ability icon when it comes to special abilities
                                     if (data.menuChoiceType == MenuChoiceType.SpecialAbility)
                                     {
                                         Console.WriteLine("TOSTVI special ability case scenario");
-                                        sprite = roleData.specialAbilityIcon;
+                                        sprite = Manager.GetSprite(roleData, panel, 3);
                                     }
                                     Console.WriteLine("TOSTVI starting the request");
                                     switch (data.menuChoiceType)
@@ -371,6 +374,66 @@ namespace TOSTeamVisitsIcons
                     }
                 }
             }
+        }
+
+        internal static Sprite GetSprite(UIRoleData.UIRoleDataInstance instance, RoleCardPanel panel, int ability = 0) 
+        {
+            Sprite sprite;
+            if (ModStates.IsEnabled("alchlcsystm.fancy.ui") && Settings.fancyUI != null)
+            {
+                //Get sprite from Fancy UI if found
+                sprite = GetFancyUISprite(instance.role, panel.CurrentFaction,ability);
+            }
+            else
+            {
+                //Get vannila icons
+                switch (ability) 
+                {
+                    default:
+                    case 0:
+                        sprite = instance.roleIcon;
+                        break;
+                    case 1:
+                        sprite = instance.abilityIcon;
+                        break;
+                    case 2:
+                        sprite = instance.abilityIcon2;
+                        break;
+                    case 3:
+                        sprite = instance.specialAbilityIcon;
+                        break;
+                }
+            }
+            return sprite;
+        }
+
+        private static Sprite GetFancyUISprite(Role role, FactionType faction, int ability) 
+        {
+            //Load types
+            Type fancyuiassman = Settings.fancyUI.GetType("FancyUI.Assets.FancyAssetManager");
+            Type facnyuiutils = Settings.fancyUI.GetType("FancyUI.Utils");
+            //Get role name
+            string RoleName = (string)facnyuiutils.GetMethod("RoleName", BindingFlags.Static | BindingFlags.Public).Invoke(null, new object[] { role, null });
+            //Add ability to name if needed
+            switch (ability) 
+            {
+                default:
+                    break;
+                case 1:
+                    RoleName += "_Ability_1";
+                    break;
+                case 2:
+                    RoleName += "_Ability_2";
+                    break;
+                case 3:
+                    RoleName += "_Special";
+                    break;
+            }
+            //Get faction name
+            string FactionName = (string)facnyuiutils.GetMethod("FactionName", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(FactionType), Settings.fancyUI.GetType("FancyUI.GameModType"), typeof(bool), typeof(bool) },null).Invoke(null, new object[] { faction, null,true,false });
+            //Get sprite
+            Sprite sprite = (Sprite)fancyuiassman.GetMethod("GetSprite", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(string), typeof(bool), typeof(string), typeof(string), typeof(bool) },null).Invoke(null, new object[] { RoleName, true, FactionName, null, false });
+            return sprite;
         }
     }
 }
