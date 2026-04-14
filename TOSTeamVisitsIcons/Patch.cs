@@ -85,7 +85,7 @@ namespace TOSTeamVisitsIcons
                                             //Fix so it works with BTOS Seer
                                             if (data.teammateRole == Role.SEER && roleData.abilityIcon2 == null) 
                                             {
-                                                sprite = Manager.GetSprite(roleData, panel, 2);
+                                                sprite = Manager.GetSprite(roleData, panel, 3);
                                             }
                                             sprite = Manager.GetSprite(roleData, panel, 2);
                                         }
