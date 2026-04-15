@@ -151,6 +151,7 @@ namespace TOSTeamVisitsIcons
                                     if (roleData.role == Role.SEER && data.menuChoiceType == MenuChoiceType.NightAbility2 && roleData.abilityIcon2 == null)
                                     {
                                         sprite = Manager.GetSprite(roleData, panel, 3);
+                                        Console.WriteLine("TOSTVI Curtis L");
                                     }
                                     if (sprite == null) 
                                     {
