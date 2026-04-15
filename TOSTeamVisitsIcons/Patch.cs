@@ -43,6 +43,7 @@ namespace TOSTeamVisitsIcons
                     {
                         Console.WriteLine($"Target {data.teammateTargetingPosition1}");
                     }
+                    Console.WriteLine($"With the ability {data.menuChoiceType}");
                     Console.WriteLine($"They {(data.bHasNecronomicon ? "have" : "don't have")} the necronomicon!");
                     if (panel == null)
                     {
@@ -78,16 +79,13 @@ namespace TOSTeamVisitsIcons
                                             else
                                             {
                                                 sprite = Manager.GetSprite(roleData, panel, 1);
+                                                Console.WriteLine("TOSTVI DM ability 1 case scenario");
                                             }
                                         }
                                         else if (data.menuChoiceType == MenuChoiceType.NightAbility2)
                                         {
-                                            //Fix so it works with BTOS Seer
-                                            if (data.teammateRole == Role.SEER && roleData.abilityIcon2 == null) 
-                                            {
-                                                sprite = Manager.GetSprite(roleData, panel, 3);
-                                            }
                                             sprite = Manager.GetSprite(roleData, panel, 2);
+                                            Console.WriteLine("TOSTVI DM ability 2 case scenario");
                                         }
                                     }
                                     else if (data.bHasNecronomicon && ModSettings.GetString("Display Mode") == "Role + Book Icon")
@@ -147,6 +145,11 @@ namespace TOSTeamVisitsIcons
                                     if (data.menuChoiceType == MenuChoiceType.SpecialAbility)
                                     {
                                         Console.WriteLine("TOSTVI special ability case scenario");
+                                        sprite = Manager.GetSprite(roleData, panel, 3);
+                                    }
+                                    //BTOS Seer fix
+                                    if (roleData.role == Role.SEER && data.menuChoiceType == MenuChoiceType.NightAbility2 && roleData.abilityIcon2 == null)
+                                    {
                                         sprite = Manager.GetSprite(roleData, panel, 3);
                                     }
                                     if (sprite == null) 
